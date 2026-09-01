@@ -58,9 +58,9 @@ class Settings(BaseSettings):
     )
 
     # Inference Parameters
-    MAX_NEW_TOKENS: int = 4096
+    MAX_NEW_TOKENS: int = 2048
     TEMPERATURE: float = 0.1
-    REQUEST_TIMEOUT: int = 180
+    REQUEST_TIMEOUT: int = 60
 
     # Local Model Settings (For GPU-based local execution)
     QWEN_MODEL_PATH: Optional[str] = None
