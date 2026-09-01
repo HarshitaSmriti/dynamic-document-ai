@@ -87,7 +87,10 @@ def render_dynamic_form(data: Dict[str, Any], key_prefix: str = "field") -> Dict
 
 
 # Environment Configuration (Render / Local API URL)
-DEFAULT_API_URL = os.getenv("STREAMLIT_API_URL", os.getenv("BACKEND_API_URL", "http://localhost:8000"))
+DEFAULT_API_URL = os.getenv(
+    "STREAMLIT_API_URL",
+    os.getenv("BACKEND_API_URL", "https://dynamic-document-ai.onrender.com"),
+)
 
 # Header Section
 st.title("📄 Dynamic Enterprise Document AI")
@@ -97,16 +100,23 @@ st.caption("Schema-Agnostic Multimodal Extraction with Qwen2.5-VL • Multi-Page
 with st.sidebar:
     st.header("⚙️ API & Extraction Settings")
 
-    backend_endpoint = st.text_input(
+    raw_backend = st.text_input(
         "Backend API Base URL",
         value=DEFAULT_API_URL,
-        help="URL of the deployed Render Backend API (or http://localhost:8000)",
-    ).rstrip("/")
+        help="URL of the deployed Render Backend API (e.g. https://dynamic-document-ai.onrender.com)",
+    )
+
+    # Sanitize URL and fix truncated endings
+    backend_endpoint = raw_backend.strip().rstrip("/")
+    if backend_endpoint.endswith(".c"):
+        backend_endpoint += "om"
+    elif backend_endpoint.endswith(".co"):
+        backend_endpoint += "m"
 
     # Health Check Probe
     if st.button("🔄 Check Backend Health", use_container_width=True):
         try:
-            res = requests.get(f"{backend_endpoint}/health", timeout=5)
+            res = requests.get(f"{backend_endpoint}/health", timeout=8)
             if res.status_code == 200:
                 h_data = res.json()
                 st.success(f"✅ Online ({h_data.get('provider', {}).get('model_name', 'Qwen-VL')})")
@@ -202,7 +212,7 @@ with col_result:
                     endpoint,
                     files=files,
                     data=data_payload,
-                    timeout=300,
+                    timeout=180,
                 )
                 latency = round(time.perf_counter() - t_start, 2)
 
