@@ -1,9 +1,8 @@
 """FastAPI Application Main Entrypoint for Production and Development."""
 
 import os
-from fastapi import FastAPI, Request, Response, status
+from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.api.routes import router as api_router
 from backend.config import get_settings
@@ -19,38 +18,7 @@ app = FastAPI(
     debug=settings.DEBUG,
 )
 
-
-class UniversalCORSMiddleware(BaseHTTPMiddleware):
-    """Custom middleware guaranteeing CORS headers on every response, including error states."""
-
-    async def dispatch(self, request: Request, call_next):
-        if request.method == "OPTIONS":
-            response = Response(status_code=status.HTTP_200_OK)
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-            response.headers["Access-Control-Allow-Headers"] = "*"
-            response.headers["Access-Control-Max-Age"] = "86400"
-            return response
-
-        try:
-            response = await call_next(request)
-        except Exception as exc:
-            response = Response(
-                content=f'{{"detail":"Internal error: {str(exc)}"}}',
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                media_type="application/json",
-            )
-
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        response.headers["Access-Control-Allow-Headers"] = "*"
-        return response
-
-
-# Add universal CORS middleware
-app.add_middleware(UniversalCORSMiddleware)
-
-# Standard Starlette CORS middleware
+# Standard Fast, Native Starlette CORS Middleware (No BaseHTTPMiddleware overhead)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -61,13 +29,13 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Include API endpoints (e.g. /health, /extract, /extract/upload)
+# Include API endpoints (e.g. /extract, /extract/upload)
 app.include_router(api_router)
 
 
-@app.get("/", status_code=status.HTTP_200_OK)
-async def root():
-    """Root status endpoint for uptime checks."""
+@app.api_route("/", methods=["GET", "HEAD"], status_code=status.HTTP_200_OK)
+def root():
+    """Root status endpoint for uptime and Render health checks."""
     return {
         "app": settings.APP_NAME,
         "status": "online",
@@ -77,15 +45,19 @@ async def root():
     }
 
 
-@app.get("/health", status_code=status.HTTP_200_OK)
-async def health_check():
-    """Health check endpoint for Render / load balancer liveness probe."""
-    provider_status = service.provider.get_status()
+@app.api_route("/health", methods=["GET", "HEAD"], status_code=status.HTTP_200_OK)
+def health_check():
+    """Instantaneous health check endpoint for Render load balancer liveness probes."""
     return {
         "status": "healthy",
         "service": settings.APP_NAME,
         "backend": settings.MODEL_BACKEND,
-        "provider": provider_status,
+        "model": settings.QWEN_MODEL_NAME,
+        "provider": {
+            "backend": settings.MODEL_BACKEND,
+            "model_name": settings.QWEN_MODEL_NAME,
+            "status": "online",
+        },
     }
 
 

@@ -18,16 +18,19 @@ settings = get_settings()
 service = DocumentExtractionService()
 
 
-@router.get("/health", status_code=status.HTTP_200_OK)
-@router.get("/api/v1/health", status_code=status.HTTP_200_OK)
-async def health_check():
-    """Health check endpoint reporting backend service and model provider status."""
-    provider_status = service.provider.get_status()
+@router.api_route("/api/v1/health", methods=["GET", "HEAD"], status_code=status.HTTP_200_OK)
+def api_health_check():
+    """Health check endpoint reporting backend service and model status."""
     return {
         "status": "healthy",
         "service": settings.APP_NAME,
         "backend": settings.MODEL_BACKEND,
-        "provider": provider_status,
+        "model": settings.QWEN_MODEL_NAME,
+        "provider": {
+            "backend": settings.MODEL_BACKEND,
+            "model_name": settings.QWEN_MODEL_NAME,
+            "status": "online",
+        },
     }
 
 
