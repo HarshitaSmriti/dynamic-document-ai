@@ -1,8 +1,9 @@
 """FastAPI Application Main Entrypoint for Production and Development."""
 
 import os
-from fastapi import FastAPI, status
+from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from backend.api.routes import router as api_router
 from backend.config import get_settings
@@ -18,17 +19,46 @@ app = FastAPI(
     debug=settings.DEBUG,
 )
 
-# Parse CORS origins
-cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
-if not cors_origins or "*" in cors_origins:
-    cors_origins = ["*"]
 
+class UniversalCORSMiddleware(BaseHTTPMiddleware):
+    """Custom middleware guaranteeing CORS headers on every response, including error states."""
+
+    async def dispatch(self, request: Request, call_next):
+        if request.method == "OPTIONS":
+            response = Response(status_code=status.HTTP_200_OK)
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+            response.headers["Access-Control-Allow-Headers"] = "*"
+            response.headers["Access-Control-Max-Age"] = "86400"
+            return response
+
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            response = Response(
+                content=f'{{"detail":"Internal error: {str(exc)}"}}',
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                media_type="application/json",
+            )
+
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        return response
+
+
+# Add universal CORS middleware
+app.add_middleware(UniversalCORSMiddleware)
+
+# Standard Starlette CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_origin_regex=r"^https?:\/\/.*",
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Include API endpoints (e.g. /health, /extract, /extract/upload)
