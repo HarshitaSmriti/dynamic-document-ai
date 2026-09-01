@@ -3,6 +3,7 @@
 import io
 import json
 from typing import Optional
+import anyio
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, status
 
 from backend.config import get_settings
@@ -37,9 +38,12 @@ def api_health_check():
 @router.post("/extract", response_model=ExtractionResponse)
 @router.post("/api/v1/extract", response_model=ExtractionResponse)
 async def extract_document(request: ExtractionRequest):
-    """Dynamic document extraction endpoint receiving JSON payload with base64 image or PDF."""
+    """Dynamic document extraction endpoint receiving JSON payload with base64 image or PDF.
+    
+    Offloaded to worker thread via anyio.to_thread.run_sync to keep the event loop non-blocking.
+    """
     try:
-        response = service.process_request(request)
+        response = await anyio.to_thread.run_sync(service.process_request, request)
         return response
     except Exception as exc:
         raise HTTPException(
@@ -59,7 +63,11 @@ async def extract_document_upload(
         None, description="Optional custom extraction guidance"
     ),
 ):
-    """Dynamic document extraction endpoint receiving multipart file upload (single image or multi-page PDF)."""
+    """Dynamic document extraction endpoint receiving multipart file upload (single image or multi-page PDF).
+    
+    Offloads heavy image processing and VLM network calls to worker threads so the main event loop
+    remains 100% responsive and Render health checks succeed instantly without timing out.
+    """
     try:
         content = await file.read()
 
@@ -68,11 +76,14 @@ async def extract_document_upload(
             schema_dict = json.loads(schema_json)
             schema = ExtractionSchema(**schema_dict)
 
-        response = service.process_file_bytes(
-            file_bytes=content,
-            filename=file.filename or "document.pdf",
-            schema=schema,
-            custom_instructions=custom_instructions,
+        # Offload synchronous extraction to thread pool
+        response = await anyio.to_thread.run_sync(
+            lambda: service.process_file_bytes(
+                file_bytes=content,
+                filename=file.filename or "document.pdf",
+                schema=schema,
+                custom_instructions=custom_instructions,
+            )
         )
         return response
 
