@@ -13,8 +13,9 @@ python-dotenv>=1.0.1
 Pillow>=10.2.0
 pymupdf>=1.24.0
 
-# Optional Local Streamlit Dashboard
+# Streamlit Public Frontend & Data Export
 streamlit>=1.32.0
+pandas>=2.0.0
 
 # Testing & Verification
 pytest>=8.1.0
