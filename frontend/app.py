@@ -7,25 +7,87 @@ No API keys are embedded or exposed in this frontend.
 import io
 import json
 import os
+import sys
 import time
+from pathlib import Path
 from typing import Any, Dict
 import pandas as pd
 import requests
 import streamlit as st
 from PIL import Image
 
-from frontend.components.dynamic_form import render_dynamic_form
+# Ensure project root is in sys.path
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
-# Environment Configuration (Render / Local API URL)
-DEFAULT_API_URL = os.getenv("STREAMLIT_API_URL", os.getenv("BACKEND_API_URL", "http://localhost:8000"))
-
-# Page Setup
+# Page Setup MUST BE FIRST STREAMLIT CALL
 st.set_page_config(
     page_title="Dynamic Document AI Extractor",
     page_icon="📄",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+
+def render_dynamic_form(data: Dict[str, Any], key_prefix: str = "field") -> Dict[str, Any]:
+    """Recursively render editable Streamlit input components for dynamic JSON key-values."""
+    edited_data = {}
+
+    if not data or not isinstance(data, dict):
+        st.info("No structured data to display in form.")
+        return edited_data
+
+    for key, value in data.items():
+        if key.startswith("_"):
+            continue
+
+        unique_key = f"{key_prefix}_{key}"
+        label = key.replace("_", " ").title()
+
+        if isinstance(value, dict):
+            with st.expander(f"📁 {label}", expanded=True):
+                edited_data[key] = render_dynamic_form(value, key_prefix=unique_key)
+
+        elif isinstance(value, list):
+            with st.expander(f"📋 {label} ({len(value)} items)", expanded=True):
+                edited_list = []
+                for idx, item in enumerate(value):
+                    if isinstance(item, dict):
+                        st.markdown(f"**Item {idx + 1}**")
+                        edited_item = render_dynamic_form(item, key_prefix=f"{unique_key}_{idx}")
+                        edited_list.append(edited_item)
+                        st.divider()
+                    else:
+                        item_val = st.text_input(
+                            f"Item {idx + 1}",
+                            value=str(item) if item is not None else "",
+                            key=f"{unique_key}_{idx}",
+                        )
+                        edited_list.append(item_val)
+                edited_data[key] = edited_list
+
+        elif isinstance(value, bool):
+            edited_data[key] = st.checkbox(label, value=value, key=unique_key)
+
+        elif isinstance(value, (int, float)):
+            if isinstance(value, int):
+                edited_data[key] = st.number_input(label, value=int(value), step=1, key=unique_key)
+            else:
+                edited_data[key] = st.number_input(label, value=float(value), step=0.01, format="%.2f", key=unique_key)
+
+        else:
+            str_val = str(value) if value is not None else ""
+            if len(str_val) > 80:
+                edited_data[key] = st.text_area(label, value=str_val, key=unique_key)
+            else:
+                edited_data[key] = st.text_input(label, value=str_val, key=unique_key)
+
+    return edited_data
+
+
+# Environment Configuration (Render / Local API URL)
+DEFAULT_API_URL = os.getenv("STREAMLIT_API_URL", os.getenv("BACKEND_API_URL", "http://localhost:8000"))
 
 # Header Section
 st.title("📄 Dynamic Enterprise Document AI")
@@ -34,7 +96,7 @@ st.caption("Schema-Agnostic Multimodal Extraction with Qwen2.5-VL • Multi-Page
 # Sidebar Configuration
 with st.sidebar:
     st.header("⚙️ API & Extraction Settings")
-    
+
     backend_endpoint = st.text_input(
         "Backend API Base URL",
         value=DEFAULT_API_URL,
