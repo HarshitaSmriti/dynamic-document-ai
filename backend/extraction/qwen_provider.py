@@ -65,21 +65,18 @@ class HostedQwenProvider(BaseVLMProvider):
         self.timeout = self.settings.REQUEST_TIMEOUT
 
     def _image_to_data_uri(self, image: Union[Image.Image, str]) -> str:
-        """Convert a PIL Image or base64 string to a valid data URI."""
+        """Convert a PIL Image or base64 string to a valid, lightweight data URI."""
         if isinstance(image, str):
             if image.startswith("data:image"):
                 return image
             return f"data:image/jpeg;base64,{image}"
 
-        # PIL Image conversion
+        # PIL Image conversion with memory and payload compression
         buffered = io.BytesIO()
-        image_format = image.format or "JPEG"
-        if image_format.upper() not in ["JPEG", "PNG", "WEBP"]:
-            image_format = "JPEG"
-        image.save(buffered, format=image_format)
+        rgb_img = image.convert("RGB") if image.mode != "RGB" else image
+        rgb_img.save(buffered, format="JPEG", quality=85, optimize=True)
         b64_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
-        mime_type = "image/png" if image_format.upper() == "PNG" else "image/jpeg"
-        return f"data:{mime_type};base64,{b64_str}"
+        return f"data:image/jpeg;base64,{b64_str}"
 
     def generate_with_metadata(
         self,

@@ -1,11 +1,13 @@
 """Document Extraction Service.
 
 Coordinates document pre-processing (PDF rendering, image decoding),
-parallel multi-page dynamic extraction, VLM inference, and intelligent document-level consolidation.
+lightweight parallel multi-page dynamic extraction, VLM inference, and intelligent document-level consolidation.
+Optimized for 512MB RAM cloud containers (Render Free Tier).
 """
 
 import base64
 import concurrent.futures
+import gc
 import io
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -24,7 +26,7 @@ from backend.schemas.extraction import (
 
 
 class DocumentExtractionService:
-    """Production-ready dynamic document extraction service supporting fast parallel multi-page extraction."""
+    """Production-ready dynamic document extraction service supporting fast, memory-safe multi-page extraction."""
 
     def __init__(self, provider: Optional[BaseVLMProvider] = None):
         self.provider = provider or get_vlm_provider()
@@ -32,21 +34,34 @@ class DocumentExtractionService:
         self.parser = DynamicJSONParser()
 
     def decode_base64_image(self, base64_str: str) -> Image.Image:
-        """Decode base64 string to PIL Image."""
+        """Decode base64 string to PIL Image with memory optimization."""
         if "," in base64_str:
             base64_str = base64_str.split(",", 1)[1]
         image_bytes = base64.b64decode(base64_str)
-        return Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        return self._optimize_image(img)
 
-    def render_pdf_bytes_to_images(self, pdf_bytes: bytes, dpi: int = 140) -> List[Image.Image]:
-        """Convert PDF byte stream into a list of PIL Images."""
+    def _optimize_image(self, img: Image.Image, max_dim: int = 1500) -> Image.Image:
+        """Resize image if dimensions exceed max_dim to keep RAM and VLM tokens lightweight."""
+        w, h = img.size
+        if max(w, h) > max_dim:
+            scale = max_dim / float(max(w, h))
+            new_size = (int(w * scale), int(h * scale))
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
+        return img
+
+    def render_pdf_bytes_to_images(self, pdf_bytes: bytes, dpi: int = 110) -> List[Image.Image]:
+        """Convert PDF byte stream into optimized PIL Images without memory bloat."""
         doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
         images = []
         for page_num in range(len(doc)):
             page = doc.load_page(page_num)
             pix = page.get_pixmap(dpi=dpi)
-            img = Image.open(io.BytesIO(pix.tobytes("png"))).convert("RGB")
+            img = Image.open(io.BytesIO(pix.tobytes("jpeg"))).convert("RGB")
+            img = self._optimize_image(img)
             images.append(img)
+        doc.close()
+        gc.collect()
         return images
 
     def _extract_single_page(
@@ -57,7 +72,7 @@ class DocumentExtractionService:
         schema: Optional[ExtractionSchema],
         custom_instructions: Optional[str],
     ) -> Tuple[int, bool, Optional[ExtractedDocumentPayload], Optional[str], Optional[str]]:
-        """Worker function to process one page in parallel."""
+        """Worker function to process one page with isolated error handling."""
         prompt = self.prompt_builder.build_extraction_prompt(
             schema=schema,
             custom_instructions=custom_instructions,
@@ -84,7 +99,7 @@ class DocumentExtractionService:
         schema: Optional[ExtractionSchema] = None,
         custom_instructions: Optional[str] = None,
     ) -> ExtractionResponse:
-        """Extract dynamic structured data from single or multiple document page images using parallel workers."""
+        """Extract dynamic structured data from single or multiple document page images using memory-capped workers."""
         if not images:
             return ExtractionResponse(
                 success=False,
@@ -133,9 +148,9 @@ class DocumentExtractionService:
                     error_message=str(exc),
                 )
 
-        # Parallel Multi-page document extraction (5x speedup)
+        # Memory-safe Multi-page extraction (capped at 2 workers to fit 512MB RAM limits)
         page_results: List[Tuple[int, bool, Optional[ExtractedDocumentPayload], Optional[str], Optional[str]]] = []
-        max_workers = min(5, total_pages)
+        max_workers = min(2, total_pages)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [
@@ -173,6 +188,10 @@ class DocumentExtractionService:
             else:
                 all_warnings.append(f"Page {page_idx} error: {err}")
 
+        # Clean memory immediately
+        del images
+        gc.collect()
+
         if not page_payloads:
             return ExtractionResponse(
                 success=False,
@@ -208,7 +227,7 @@ class DocumentExtractionService:
 
         if is_pdf:
             try:
-                images = self.render_pdf_bytes_to_images(file_bytes, dpi=140)
+                images = self.render_pdf_bytes_to_images(file_bytes, dpi=110)
             except Exception as exc:
                 return ExtractionResponse(
                     success=False,
@@ -218,6 +237,7 @@ class DocumentExtractionService:
         else:
             try:
                 img = Image.open(io.BytesIO(file_bytes)).convert("RGB")
+                img = self._optimize_image(img)
                 images = [img]
             except Exception as exc:
                 return ExtractionResponse(
