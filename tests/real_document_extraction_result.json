@@ -1,0 +1,778 @@
+{
+  "document_type": "stitching_invoice",
+  "document": {
+    "company_name": "DOLLAR INDUSTRIES LIMITED, TIRUPUR",
+    "CIN_NO": "L17299WB1993PLC058969",
+    "address": [
+      "8/624, AVINASHI GROUND PALAYAM BEHIND WESTCOAST INDL AREA ANGERI PALAYAM",
+      "8/624, AVINASHI GROUND PALAYAM BEHIND WEST COAST INDL AREA ANGERI PALAYAM",
+      "8/624, AVINASHI GROUNDERS PALAYAM BEHIND WEST COAST INDL AREA ANGERI PALAYAM",
+      "8/624, AVINASHI GROUND ER PALAYAM BEHIND WEST COAST INDL AREA ANGERI PALAYAM"
+    ],
+    "form": "ZTPMKS259SRIBAGAWATHIAMMANTEX",
+    "BILL_NO": "8176000040",
+    "BILL_DATE": "13.04.2026",
+    "REF_NO": "01",
+    "REF_DATE": "07.04.2026",
+    "cin_number": "L17299WB1993PLC058969",
+    "company_location": "TIRUPUR",
+    "total_value_in_words": "ONE LAKH THIRTY FIVE THOUSAND SIXTY SEVEN RUPEES",
+    "bill_amount": "135,067.00"
+  },
+  "tables": [
+    {
+      "table_name": "Material Description and Consumption Details",
+      "headers": [
+        "PO.NO.",
+        "MATERIAL DESCRIPTION",
+        "Stor.loc.",
+        "Batch",
+        "GR QTY",
+        "BILL QTY",
+        "RATE",
+        "AMT INR"
+      ],
+      "rows": [
+        [
+          "5870109892",
+          "DLR CLUB LONG TRK U/E ASSTP3EX-11-12",
+          "TPR Rej.SM",
+          "REJECT",
+          "4.00",
+          "4.00",
+          "9.6000",
+          "38.40"
+        ],
+        [
+          "5870109892",
+          "DLR CLUB LONG TRK U/E ASSTP3EX-11-12",
+          "TPR Tirupur",
+          "OPEN",
+          "5,412.00",
+          "5,412.00",
+          "9.6000",
+          "51,955.20"
+        ],
+        [
+          "5870109892",
+          "DLR CLUB LONG TRK U/E ASSTP3EX-11-12",
+          "TPR Rej.CM",
+          "REJECT",
+          "56.00",
+          "56.00",
+          "9.6000",
+          "537.60"
+        ],
+        [
+          "5870111456",
+          "DLR LHR LONG TRKT/E ASSTP1-65",
+          "TPR Tirupur",
+          "OPEN",
+          "7,180.00",
+          "7,180.00",
+          "10.5700",
+          "75,892.60"
+        ],
+        [
+          "5870111456",
+          "DLR LHR LONG TRKT/E ASSTP1-65",
+          "TPR Rej.SM",
+          "REJECT",
+          "4.00",
+          "4.00",
+          "10.5700",
+          "42.28"
+        ],
+        [
+          "5870111456",
+          "DLR LHR LONG TRKT/E ASSTP1-65",
+          "TPR Rej.CM",
+          "REJECT",
+          "16.00",
+          "16.00",
+          "10.5700",
+          "169.12"
+        ],
+        [
+          "Total",
+          "",
+          "",
+          "",
+          "12,672.00",
+          "12,672.00",
+          "",
+          "128635.20"
+        ]
+      ],
+      "pages": [
+        1
+      ]
+    },
+    {
+      "table_name": "Consumption Details",
+      "headers": [
+        "Material Code",
+        "Material Desc",
+        "Do No.",
+        "Do Date",
+        "Issue Qty",
+        "Receive Qty",
+        "Debit/Credit Qty"
+      ],
+      "rows": [
+        [
+          "75000001",
+          "DLR HLG",
+          "5176146697",
+          "13.03.2026",
+          "7,200.00",
+          "7,200.00",
+          ""
+        ],
+        [
+          "75000160",
+          "BRF, PTY, BLMRBOPPPRT-160X130MM",
+          "5176146697",
+          "13.03.2026",
+          "7,200.00",
+          "7,200.00",
+          ""
+        ],
+        [
+          "75000164",
+          "DLR BRAND STK",
+          "5176146697",
+          "13.03.2026",
+          "7,200.00",
+          "7,200.00",
+          ""
+        ],
+        [
+          "75000334",
+          "ELS-20MM(2W) CROCHET F-TAPE",
+          "5176119445",
+          "28.02.2025",
+          "2,690.40",
+          "2,690.40",
+          ""
+        ],
+        [
+          "75000666",
+          "CB LONG TRKU/EJNREXSPPP3",
+          "5176119431",
+          "28.02.2025",
+          "1,824.00",
+          "1,824.00",
+          ""
+        ],
+        [
+          "75000667",
+          "CB LONG TRKU/EJNREXCRT P3",
+          "5176119431",
+          "28.02.2025",
+          "456.00",
+          "456.00",
+          ""
+        ],
+        [
+          "75000669",
+          "CB LONG TRKEXCLRJNRB.CODEP3STK",
+          "5176119431",
+          "28.02.2025",
+          "2,280.00",
+          "2,280.00",
+          ""
+        ],
+        [
+          "75001098",
+          "SZ STK/11-12",
+          "5176176232",
+          "05.07.2024",
+          "4,104.00",
+          "4,104.00",
+          ""
+        ],
+        [
+          "75001215",
+          "LHR LONG TRKT/EJNRSPPP1",
+          "5176183081",
+          "28.03.2025",
+          "7,200.00",
+          "7,200.00",
+          ""
+        ],
+        [
+          "75001216",
+          "LHR LONG TRKT/EJNRCRTP1",
+          "5176183081",
+          "28.03.2025",
+          "720.00",
+          "720.00",
+          ""
+        ],
+        [
+          "75001218",
+          "ELS-30MMLHTRKJNRT/E",
+          "5176156122",
+          "17.03.2026",
+          "3,362.40",
+          "3,362.40",
+          ""
+        ],
+        [
+          "75001253",
+          "SZ STK/65",
+          "5176183094",
+          "25.03.2026",
+          "7,920.00",
+          "7,920.00",
+          ""
+        ],
+        [
+          "75002605",
+          "PLASTIC CLIP",
+          "5176119431",
+          "28.02.2025",
+          "5,472.00",
+          "5,472.00",
+          ""
+        ],
+        [
+          "75002609",
+          "HANGER",
+          "5176177832",
+          "26.03.2025",
+          "1,824.00",
+          "1,824.00",
+          ""
+        ],
+        [
+          "75007030",
+          "CB LONG TRKJNRWVNLBLSZ/11-12",
+          "5176119431",
+          "28.02.2025",
+          "5,472.00",
+          "5,472.00",
+          ""
+        ],
+        [
+          "Total",
+          "",
+          "",
+          "",
+          "64,924.80",
+          "64,924.80",
+          ""
+        ],
+        [
+          "75007562",
+          "LHR LONG TRK JNR T/EWVNSZLBL-65CM",
+          "5176146697",
+          "13.03.2026",
+          "7,200.00",
+          "7,200.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLR LHR LONG TRK T/E ASST P1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLRLHRLONGTRKT/EASSTP1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLRLHRLONGTRKT/EASSTP1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLRLHRLONGTRKT/EASSTP1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLRLHRLONGTRKT/EASSTP1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLRLHRLONGTRKT/EASSTP1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLRLHRLONGTRKT/EASSTP1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-LHTR131000-65",
+          "C-DLRLHRLONGTRKT/EASSTP1-65",
+          "5176145136",
+          "12.03.2025",
+          "240.00",
+          "240.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLRCLUBLONGTRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLRCLUBLONGTRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLRCLUBLONGTRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLRCLUBLONGTRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLRCLUBLONGTRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLRCLUBLONGTRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLRCLUBLONGTRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLRCLUBLONGTRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ],
+        [
+          "C-XCTR083000-11-12",
+          "C-DLR CLUB LONG TRKU/EASSTP3EX-11-12",
+          "5176118923",
+          "27.02.2026",
+          "228.00",
+          "228.00",
+          ""
+        ]
+      ],
+      "pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    }
+  ],
+  "lists": [
+    {
+      "list_name": "Remarks",
+      "items": [
+        "(Inclusive INV Cont HUF/Indiv 1% 194CRs -1286)",
+        "NOTE",
+        "(Inclusive INV Cont HUF/Indiv 1% 194CRs - 1286)",
+        "BASIC TOTAL 128635.20",
+        "STITCHING CHARGES 0.02",
+        "IN: Central GST @2.50% 3215.89",
+        "IN: State GST @2.50% 3215.89",
+        "(Inclusive IN V Cont HUF/Indiv 1%194CRs -1286)"
+      ],
+      "pages": [
+        2,
+        4,
+        5
+      ]
+    },
+    {
+      "list_name": "Terms and Conditions",
+      "items": [
+        "We will not accept any excess/additional quantity more than the Purchase Bill.",
+        "Seller&Buyer TIN&CST Number must be mentioned in Invoice. We are not responsible for any Liability Raised due to non-mentioning the TIN or CST Numbers and Non-submitting statutory declaration or forms.",
+        "We are not responsible for any quality mistake, shortage, theft or damage of goods while in transit and non-delivery of goods by your Transporter.",
+        "Subject to KOLKATA jurisdiction only."
+      ],
+      "pages": [
+        5
+      ]
+    }
+  ],
+  "warnings": []
+}
