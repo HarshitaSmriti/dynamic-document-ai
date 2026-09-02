@@ -9,9 +9,13 @@ client = TestClient(app)
 
 def test_root_endpoint():
     response = client.get("/")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["status"] == "online"
+    assert response.status_code == 204
+    assert response.content == b""
+    assert response.headers.get("content-length") == "0"
+
+    response_200 = client.get("/?code=200")
+    assert response_200.status_code == 200
+    assert response_200.text == "OK"
 
 
 def test_health_endpoint():

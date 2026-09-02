@@ -1,6 +1,7 @@
 """FastAPI Application Main Entrypoint for Production and Development."""
 
 import os
+from typing import Optional
 from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -33,32 +34,28 @@ app.add_middleware(
 app.include_router(api_router)
 
 
-@app.api_route("/", methods=["GET", "HEAD"], status_code=status.HTTP_200_OK)
-def root():
-    """Root status endpoint for uptime and Render health checks."""
-    return {
-        "app": settings.APP_NAME,
-        "status": "online",
-        "model": settings.QWEN_MODEL_NAME,
-        "backend": settings.MODEL_BACKEND,
-        "docs_url": "/docs",
-    }
+@app.api_route("/", methods=["GET", "HEAD"], status_code=status.HTTP_204_NO_CONTENT)
+@app.api_route("/health", methods=["GET", "HEAD"], status_code=status.HTTP_204_NO_CONTENT)
+@app.api_route("/cron", methods=["GET", "HEAD"], status_code=status.HTTP_204_NO_CONTENT)
+@app.api_route("/ping", methods=["GET", "HEAD"], status_code=status.HTTP_204_NO_CONTENT)
+def cron_health_ping(code: Optional[int] = None):
+    """Ultra-lightweight endpoint for cron-job.org and Render health checks.
 
-
-@app.api_route("/health", methods=["GET", "HEAD"], status_code=status.HTTP_200_OK)
-def health_check():
-    """Instantaneous health check endpoint for Render load balancer liveness probes."""
-    return {
-        "status": "healthy",
-        "service": settings.APP_NAME,
-        "backend": settings.MODEL_BACKEND,
-        "model": settings.QWEN_MODEL_NAME,
-        "provider": {
-            "backend": settings.MODEL_BACKEND,
-            "model_name": settings.QWEN_MODEL_NAME,
-            "status": "online",
-        },
-    }
+    Returns HTTP 204 No Content with Content-Length: 0 and no response body by default.
+    If ?code=200 is passed, returns HTTP 200 OK with minimal plain-text 'OK'.
+    Explicitly ensures zero JSON dumps, HTML pages, model output, or heavy payloads.
+    """
+    if code == 200:
+        return Response(
+            content=b"OK",
+            status_code=status.HTTP_200_OK,
+            media_type="text/plain",
+            headers={"Content-Length": "2"},
+        )
+    return Response(
+        status_code=status.HTTP_204_NO_CONTENT,
+        headers={"Content-Length": "0"},
+    )
 
 
 if __name__ == "__main__":

@@ -116,10 +116,17 @@ with st.sidebar:
     # Health Check Probe
     if st.button("🔄 Check Backend Health", use_container_width=True):
         try:
-            res = requests.get(f"{backend_endpoint}/health", timeout=8)
-            if res.status_code == 200:
-                h_data = res.json()
-                st.success(f"✅ Online ({h_data.get('provider', {}).get('model_name', 'Qwen-VL')})")
+            res = requests.get(f"{backend_endpoint}/api/v1/health", timeout=8)
+            if res.status_code != 200:
+                res = requests.get(f"{backend_endpoint}/health", timeout=8)
+            if res.status_code in [200, 204]:
+                model_name = "qwen/qwen2.5-vl-72b-instruct"
+                try:
+                    h_data = res.json()
+                    model_name = h_data.get("provider", {}).get("model_name", model_name)
+                except Exception:
+                    pass
+                st.success(f"✅ Online ({model_name})")
             else:
                 st.error(f"⚠️ Returned HTTP {res.status_code}")
         except Exception as err:

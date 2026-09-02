@@ -36,13 +36,21 @@ export default function App() {
   const checkHealth = async () => {
     try {
       const base = backendUrl.replace(/\/$/, '');
-      const res = await fetch(`${base}/health`, { method: 'GET' });
+      const res = await fetch(`${base}/api/v1/health`, { method: 'GET' }).catch(() => fetch(`${base}/health`, { method: 'GET' }));
       if (res.ok) {
-        const data = await res.json();
+        let model = 'qwen/qwen2.5-vl-72b-instruct';
+        let backend = 'hosted_api';
+        try {
+          const data = await res.json();
+          if (data && typeof data === 'object') {
+            model = data.provider?.model_name || data.model || model;
+            backend = data.backend || backend;
+          }
+        } catch (_) {}
         setHealthStatus({
           online: true,
-          model: data.provider?.model_name || data.model || 'qwen/qwen2.5-vl-72b-instruct',
-          backend: data.backend || 'hosted_api'
+          model: model,
+          backend: backend
         });
       } else {
         setHealthStatus({ online: false, model: 'Offline', backend: 'unknown' });
