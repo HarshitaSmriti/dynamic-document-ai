@@ -106,10 +106,18 @@ with st.sidebar:
         help="URL of the deployed Render Backend API (e.g. https://dynamic-document-ai.onrender.com)",
     )
 
-    # Sanitize URL and fix truncated endings
+    # Sanitize URL and fix truncated endings or mismatched service names
     backend_endpoint = raw_backend.strip().rstrip("/")
-    if backend_endpoint.endswith(".c"):
-        backend_endpoint += "om"
+    if "dynamic-document-ai-backend" in backend_endpoint:
+        backend_endpoint = backend_endpoint.replace("dynamic-document-ai-backend", "dynamic-document-ai")
+    if backend_endpoint.endswith(".o"):
+        backend_endpoint += "nrender.com"
+    elif backend_endpoint.endswith(".on"):
+        backend_endpoint += "render.com"
+    elif backend_endpoint.endswith(".onrender"):
+        backend_endpoint += ".com"
+    elif backend_endpoint.endswith(".onrender.c") or backend_endpoint.endswith(".c"):
+        backend_endpoint = backend_endpoint.rstrip(".c") + ".com"
     elif backend_endpoint.endswith(".co"):
         backend_endpoint += "m"
 
