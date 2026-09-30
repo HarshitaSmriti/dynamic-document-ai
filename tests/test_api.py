@@ -1,7 +1,10 @@
 """API endpoint tests using FastAPI TestClient."""
 
+import io
+import json
 import pytest
 from fastapi.testclient import TestClient
+from PIL import Image
 from backend.main import app
 
 client = TestClient(app)
@@ -24,7 +27,8 @@ def test_health_endpoint():
     data = response.json()
     assert data["status"] == "healthy"
     assert "provider" in data
-    assert data["provider"]["backend"] == "hosted_api"
+    assert data["backend"] == "local"
+    assert "Qwen" in data["model"]
 
 
 def test_extract_endpoint_without_image():

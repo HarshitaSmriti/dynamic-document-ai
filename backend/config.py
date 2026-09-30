@@ -1,5 +1,6 @@
 """Application configuration settings for production and local environments."""
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
@@ -17,7 +18,7 @@ if ENV_FILE_PATH.exists():
 class Settings(BaseSettings):
     """Global application settings loaded from environment variables."""
 
-    # Server settings (Production Render / Local)
+    # Server settings (Production / Local)
     HOST: str = Field(default="0.0.0.0", validation_alias=AliasChoices("HOST", "SERVER_HOST"))
     PORT: int = Field(default=8000, validation_alias=AliasChoices("PORT", "SERVER_PORT"))
     DEBUG: bool = Field(default=False, validation_alias=AliasChoices("DEBUG", "APP_DEBUG"))
@@ -37,35 +38,55 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("CORS_ORIGINS", "ALLOWED_ORIGINS"),
     )
 
-    # Model Backend Selector: 'hosted_api' | 'local'
+    # Model Backend Selector: 'local' (Hugging Face Transformers) | 'hosted_api' (Self-hosted OpenAI/vLLM endpoint)
     MODEL_BACKEND: str = Field(
-        default="hosted_api",
+        default="local",
         validation_alias=AliasChoices("MODEL_BACKEND", "BACKEND_TYPE"),
     )
 
-    # Hosted Qwen API Settings (OpenRouter / Alibaba Cloud DashScope / OpenAI-compatible)
-    QWEN_API_BASE: str = Field(
-        default="https://openrouter.ai/api/v1",
-        validation_alias=AliasChoices("QWEN_API_BASE", "OPENROUTER_API_BASE", "OPENAI_API_BASE"),
+    # Local Direct Qwen Transformers Model Settings (Apache-2.0 licensed)
+    QWEN_MODEL_ID: str = Field(
+        default="Qwen/Qwen2.5-VL-7B-Instruct",
+        validation_alias=AliasChoices("QWEN_MODEL_ID", "QWEN_MODEL_PATH", "QWEN_MODEL_NAME", "MODEL_NAME"),
     )
-    QWEN_MODEL_NAME: str = Field(
-        default="qwen/qwen2.5-vl-72b-instruct",
-        validation_alias=AliasChoices("QWEN_MODEL_NAME", "OPENROUTER_MODEL_NAME", "MODEL_NAME"),
+    QWEN_DEVICE: str = Field(
+        default="auto",
+        validation_alias=AliasChoices("QWEN_DEVICE", "DEVICE"),
+    )
+    QWEN_TORCH_DTYPE: str = Field(
+        default="auto",
+        validation_alias=AliasChoices("QWEN_TORCH_DTYPE", "TORCH_DTYPE"),
+    )
+
+    # Inference Hyperparameters
+    QWEN_MAX_NEW_TOKENS: int = Field(
+        default=1024,
+        validation_alias=AliasChoices("QWEN_MAX_NEW_TOKENS", "MAX_NEW_TOKENS"),
+    )
+    QWEN_TEMPERATURE: float = Field(
+        default=0.0,
+        validation_alias=AliasChoices("QWEN_TEMPERATURE", "TEMPERATURE"),
+    )
+    REQUEST_TIMEOUT: int = Field(
+        default=180,
+        validation_alias=AliasChoices("REQUEST_TIMEOUT", "TIMEOUT"),
+    )
+
+    # Optional Hugging Face Cache Directory
+    HF_HOME: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("HF_HOME", "HUGGINGFACE_HUB_CACHE"),
+    )
+
+    # Optional Self-Hosted API Provider Settings (for vLLM / Ollama / OpenAI-compatible local/remote GPU servers)
+    QWEN_API_BASE: Optional[str] = Field(
+        default="http://localhost:8000/v1",
+        validation_alias=AliasChoices("QWEN_API_BASE", "OPENAI_API_BASE", "VLLM_API_BASE"),
     )
     QWEN_API_KEY: Optional[str] = Field(
         default=None,
-        validation_alias=AliasChoices("QWEN_API_KEY", "OPENROUTER_API_KEY", "DASHSCOPE_API_KEY", "API_KEY"),
+        validation_alias=AliasChoices("QWEN_API_KEY", "API_KEY"),
     )
-
-    # Inference Parameters
-    MAX_NEW_TOKENS: int = 2048
-    TEMPERATURE: float = 0.1
-    REQUEST_TIMEOUT: int = 60
-
-    # Local Model Settings (For GPU-based local execution)
-    QWEN_MODEL_PATH: Optional[str] = None
-    DEVICE: str = "cuda"
-    TORCH_DTYPE: str = "bfloat16"
 
     model_config = SettingsConfigDict(
         env_file=str(ENV_FILE_PATH) if ENV_FILE_PATH.exists() else None,

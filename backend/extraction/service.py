@@ -1,22 +1,23 @@
 """Document Extraction Service.
 
 Coordinates document pre-processing (PDF rendering, image decoding),
-ultra-fast lightweight parallel multi-page dynamic extraction, VLM inference, and intelligent document-level consolidation.
-Optimized for zero-timeout execution on Render Free Tier (< 20s total latency, < 60MB RAM).
+multimodal VLM inference, robust JSON normalization, and intelligent document-level consolidation.
 """
 
 import base64
 import concurrent.futures
 import gc
 import io
+import logging
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union
-import pymupdf  # PyMuPDF for fast PDF rendering
 from PIL import Image
+import pymupdf  # PyMuPDF for fast PDF rendering
 
+from backend.config import Settings, get_settings
 from backend.extraction.parser import DynamicJSONParser
 from backend.extraction.prompt import DynamicPromptBuilder
-from backend.extraction.qwen_provider import BaseVLMProvider, get_vlm_provider
+from backend.extraction.qwen_provider import BaseVLMProvider, LocalQwenVLProvider, get_vlm_provider
 from backend.schemas.extraction import (
     ExtractedDocumentPayload,
     ExtractionRequest,
@@ -24,24 +25,34 @@ from backend.schemas.extraction import (
     ExtractionSchema,
 )
 
+logger = logging.getLogger("document_ai.service")
+
 
 class DocumentExtractionService:
-    """Production-ready dynamic document extraction service supporting fast, lightweight multi-page extraction."""
+    """Production-grade dynamic document extraction service supporting fast, lightweight multi-page extraction."""
 
-    def __init__(self, provider: Optional[BaseVLMProvider] = None):
-        self.provider = provider or get_vlm_provider()
+    def __init__(
+        self,
+        provider: Optional[BaseVLMProvider] = None,
+        settings: Optional[Settings] = None,
+    ):
+        self.settings = settings or get_settings()
+        self.provider = provider or get_vlm_provider(settings=self.settings)
         self.prompt_builder = DynamicPromptBuilder()
         self.parser = DynamicJSONParser()
 
     def decode_base64_image(self, base64_str: str) -> Image.Image:
         """Decode base64 string to PIL Image with memory optimization."""
-        if "," in base64_str:
-            base64_str = base64_str.split(",", 1)[1]
-        image_bytes = base64.b64decode(base64_str)
-        img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-        return self._optimize_image(img)
+        try:
+            if "," in base64_str:
+                base64_str = base64_str.split(",", 1)[1]
+            image_bytes = base64.b64decode(base64_str)
+            img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+            return self._optimize_image(img)
+        except Exception as exc:
+            raise ValueError(f"IMAGE_PROCESSING_ERROR: Failed to decode base64 image data: {str(exc)}") from exc
 
-    def _optimize_image(self, img: Image.Image, max_dim: int = 1200) -> Image.Image:
+    def _optimize_image(self, img: Image.Image, max_dim: int = 1280) -> Image.Image:
         """Resize image if dimensions exceed max_dim to ensure fast tokenization and low memory."""
         w, h = img.size
         if max(w, h) > max_dim:
@@ -51,18 +62,21 @@ class DocumentExtractionService:
         return img
 
     def render_pdf_bytes_to_images(self, pdf_bytes: bytes, dpi: int = 96) -> List[Image.Image]:
-        """Convert PDF byte stream into highly optimized PIL Images for rapid inference."""
-        doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
-        images = []
-        for page_num in range(len(doc)):
-            page = doc.load_page(page_num)
-            pix = page.get_pixmap(dpi=dpi)
-            img = Image.open(io.BytesIO(pix.tobytes("jpeg"))).convert("RGB")
-            img = self._optimize_image(img)
-            images.append(img)
-        doc.close()
-        gc.collect()
-        return images
+        """Convert PDF byte stream into optimized PIL Images for inference."""
+        try:
+            doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+            images = []
+            for page_num in range(len(doc)):
+                page = doc.load_page(page_num)
+                pix = page.get_pixmap(dpi=dpi)
+                img = Image.open(io.BytesIO(pix.tobytes("jpeg"))).convert("RGB")
+                img = self._optimize_image(img)
+                images.append(img)
+            doc.close()
+            gc.collect()
+            return images
+        except Exception as exc:
+            raise RuntimeError(f"PDF_PROCESSING_ERROR: Failed to render PDF document: {str(exc)}") from exc
 
     def _extract_single_page(
         self,
@@ -72,7 +86,7 @@ class DocumentExtractionService:
         schema: Optional[ExtractionSchema],
         custom_instructions: Optional[str],
     ) -> Tuple[int, bool, Optional[ExtractedDocumentPayload], Optional[str], Optional[str]]:
-        """Worker function to process one page concurrently."""
+        """Worker function to process one page."""
         prompt = self.prompt_builder.build_extraction_prompt(
             schema=schema,
             custom_instructions=custom_instructions,
@@ -84,7 +98,8 @@ class DocumentExtractionService:
                 images=[img],
                 prompt=prompt,
                 system_prompt=self.prompt_builder.SYSTEM_PROMPT,
-                max_new_tokens=2048,
+                max_new_tokens=self.settings.QWEN_MAX_NEW_TOKENS,
+                temperature=self.settings.QWEN_TEMPERATURE,
             )
             success, page_payload, parse_err = self.parser.parse_and_validate(
                 raw_output=raw_out,
@@ -92,6 +107,7 @@ class DocumentExtractionService:
             )
             return (page_idx, success, page_payload, raw_out, parse_err)
         except Exception as exc:
+            logger.error(f"Page {page_idx} extraction error: {exc}")
             return (page_idx, False, None, None, str(exc))
 
     def extract_from_images(
@@ -100,7 +116,7 @@ class DocumentExtractionService:
         schema: Optional[ExtractionSchema] = None,
         custom_instructions: Optional[str] = None,
     ) -> ExtractionResponse:
-        """Extract dynamic structured data from single or multiple document page images in parallel."""
+        """Extract dynamic structured data from single or multiple document page images."""
         if not images:
             return ExtractionResponse(
                 success=False,
@@ -109,7 +125,7 @@ class DocumentExtractionService:
                     warnings=["No document images provided for extraction."],
                 ),
                 raw_model_output=None,
-                error_message="Image list is empty.",
+                error_message="IMAGE_PROCESSING_ERROR: Image list is empty.",
             )
 
         total_pages = len(images)
@@ -127,7 +143,8 @@ class DocumentExtractionService:
                     images=[images[0]],
                     prompt=prompt,
                     system_prompt=self.prompt_builder.SYSTEM_PROMPT,
-                    max_new_tokens=2048,
+                    max_new_tokens=self.settings.QWEN_MAX_NEW_TOKENS,
+                    temperature=self.settings.QWEN_TEMPERATURE,
                 )
                 success, payload, error_msg = self.parser.parse_and_validate(
                     raw_output=raw_output,
@@ -150,28 +167,42 @@ class DocumentExtractionService:
                     error_message=str(exc),
                 )
 
-        # Ultra-fast parallel multi-page extraction (all pages extracted simultaneously)
+        # Multi-page extraction
+        # Note: Local GPU/CPU models are best processed sequentially to avoid VRAM contention
+        is_local_model = isinstance(self.provider, LocalQwenVLProvider)
         page_results: List[Tuple[int, bool, Optional[ExtractedDocumentPayload], Optional[str], Optional[str]]] = []
-        max_workers = min(6, total_pages)
 
-        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [
-                executor.submit(
-                    self._extract_single_page,
+        if is_local_model:
+            for idx, img in enumerate(images, 1):
+                res = self._extract_single_page(
                     img=img,
                     page_idx=idx,
                     total_pages=total_pages,
                     schema=schema,
                     custom_instructions=custom_instructions,
                 )
-                for idx, img in enumerate(images, 1)
-            ]
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    res = future.result()
-                    page_results.append(res)
-                except Exception as exc:
-                    page_results.append((0, False, None, None, str(exc)))
+                page_results.append(res)
+        else:
+            # Thread pool for remote/endpoint providers
+            max_workers = min(4, total_pages)
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = [
+                    executor.submit(
+                        self._extract_single_page,
+                        img=img,
+                        page_idx=idx,
+                        total_pages=total_pages,
+                        schema=schema,
+                        custom_instructions=custom_instructions,
+                    )
+                    for idx, img in enumerate(images, 1)
+                ]
+                for future in concurrent.futures.as_completed(futures):
+                    try:
+                        res = future.result()
+                        page_results.append(res)
+                    except Exception as exc:
+                        page_results.append((0, False, None, None, str(exc)))
 
         # Sort results by page index to preserve strict sequential ordering
         page_results.sort(key=lambda x: x[0])
@@ -234,7 +265,7 @@ class DocumentExtractionService:
                 return ExtractionResponse(
                     success=False,
                     data=ExtractedDocumentPayload(document_type="error"),
-                    error_message=f"Failed to render PDF document: {str(exc)}",
+                    error_message=f"PDF_PROCESSING_ERROR: {str(exc)}",
                 )
         else:
             try:
@@ -245,7 +276,7 @@ class DocumentExtractionService:
                 return ExtractionResponse(
                     success=False,
                     data=ExtractedDocumentPayload(document_type="error"),
-                    error_message=f"Failed to open image file: {str(exc)}",
+                    error_message=f"IMAGE_PROCESSING_ERROR: {str(exc)}",
                 )
 
         return self.extract_from_images(
@@ -267,10 +298,17 @@ class DocumentExtractionService:
                 error_message="No document data provided.",
             )
 
-        raw_b64 = request.document_base64
-        if "," in raw_b64:
-            raw_b64 = raw_b64.split(",", 1)[1]
-        file_bytes = base64.b64decode(raw_b64)
+        try:
+            raw_b64 = request.document_base64
+            if "," in raw_b64:
+                raw_b64 = raw_b64.split(",", 1)[1]
+            file_bytes = base64.b64decode(raw_b64)
+        except Exception as exc:
+            return ExtractionResponse(
+                success=False,
+                data=ExtractedDocumentPayload(document_type="error"),
+                error_message=f"IMAGE_PROCESSING_ERROR: Base64 decoding failed: {str(exc)}",
+            )
 
         return self.process_file_bytes(
             file_bytes=file_bytes,

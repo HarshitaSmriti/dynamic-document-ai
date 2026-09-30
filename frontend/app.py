@@ -1,7 +1,7 @@
 """Enterprise Dynamic Document AI - Streamlit Dashboard.
 
-Public-ready Streamlit frontend calling the backend extraction API via STREAMLIT_API_URL.
-No API keys are embedded or exposed in this frontend.
+Public-ready Streamlit frontend calling the backend extraction API via STREAMLIT_API_URL or local provider.
+No third-party paid API keys are required or exposed.
 """
 
 import io
@@ -86,10 +86,10 @@ def render_dynamic_form(data: Dict[str, Any], key_prefix: str = "field") -> Dict
     return edited_data
 
 
-# Environment Configuration (Render / Local API URL)
+# Environment Configuration (API URL)
 DEFAULT_API_URL = os.getenv(
     "STREAMLIT_API_URL",
-    os.getenv("BACKEND_API_URL", "https://dynamic-document-ai.onrender.com"),
+    os.getenv("BACKEND_API_URL", "http://localhost:8000"),
 )
 
 # Header Section
@@ -98,28 +98,15 @@ st.caption("Schema-Agnostic Multimodal Extraction with Qwen2.5-VL • Multi-Page
 
 # Sidebar Configuration
 with st.sidebar:
-    st.header("⚙️ API & Extraction Settings")
+    st.header("⚙️ System & Extraction Settings")
 
     raw_backend = st.text_input(
         "Backend API Base URL",
         value=DEFAULT_API_URL,
-        help="URL of the deployed Render Backend API (e.g. https://dynamic-document-ai.onrender.com)",
+        help="URL of the backend API (e.g. http://localhost:8000 or self-hosted GPU endpoint)",
     )
 
-    # Sanitize URL and fix truncated endings or mismatched service names
     backend_endpoint = raw_backend.strip().rstrip("/")
-    if "dynamic-document-ai-backend" in backend_endpoint:
-        backend_endpoint = backend_endpoint.replace("dynamic-document-ai-backend", "dynamic-document-ai")
-    if backend_endpoint.endswith(".o"):
-        backend_endpoint += "nrender.com"
-    elif backend_endpoint.endswith(".on"):
-        backend_endpoint += "render.com"
-    elif backend_endpoint.endswith(".onrender"):
-        backend_endpoint += ".com"
-    elif backend_endpoint.endswith(".onrender.c") or backend_endpoint.endswith(".c"):
-        backend_endpoint = backend_endpoint.rstrip(".c") + ".com"
-    elif backend_endpoint.endswith(".co"):
-        backend_endpoint += "m"
 
     # Health Check Probe
     if st.button("🔄 Check Backend Health", use_container_width=True):
@@ -128,15 +115,17 @@ with st.sidebar:
             if res.status_code != 200:
                 res = requests.get(f"{backend_endpoint}/health", timeout=8)
             if res.status_code in [200, 204]:
-                model_name = "qwen/qwen2.5-vl-72b-instruct"
+                model_name = "Qwen/Qwen2.5-VL-7B-Instruct"
+                device_info = "auto"
                 try:
                     h_data = res.json()
-                    model_name = h_data.get("provider", {}).get("model_name", model_name)
+                    model_name = h_data.get("model", model_name)
+                    device_info = h_data.get("device", "auto")
                 except Exception:
                     pass
-                st.success(f"✅ Online ({model_name})")
+                st.success(f"✅ Online • Model: {model_name} • Device: {device_info.upper()}")
             else:
-                st.error(f"⚠️ Returned HTTP {res.status_code}")
+                st.error(f"⚠️ Server returned HTTP {res.status_code}")
         except Exception as err:
             st.error(f"❌ Connection Failed: {str(err)}")
 
@@ -145,7 +134,7 @@ with st.sidebar:
     extraction_mode = st.radio(
         "Select Mode",
         options=["✨ Universal Dynamic Discovery", "📐 Custom Schema Guidance"],
-        help="Dynamic Discovery extracts all document entities without forcing a fixed schema.",
+        help="Dynamic Discovery extracts all visible document entities without forcing a fixed schema.",
     )
 
     custom_schema = None
@@ -209,7 +198,7 @@ with col_result:
     st.subheader("2. Structured Extraction Results")
 
     if extract_btn and uploaded_file is not None:
-        with st.spinner("Processing document with Vision-Language Model..."):
+        with st.spinner("Analyzing document with Qwen2.5-VL..."):
             t_start = time.perf_counter()
             try:
                 uploaded_file.seek(0)
@@ -227,7 +216,7 @@ with col_result:
                     endpoint,
                     files=files,
                     data=data_payload,
-                    timeout=180,
+                    timeout=240,
                 )
                 latency = round(time.perf_counter() - t_start, 2)
 
@@ -235,7 +224,10 @@ with col_result:
                     res_json = response.json()
                     st.session_state["extraction_response"] = res_json
                     st.session_state["latency"] = latency
-                    st.success(f"✅ Extraction completed in {latency}s!")
+                    if res_json.get("success"):
+                        st.success(f"✅ Extraction completed in {latency}s!")
+                    else:
+                        st.warning(f"⚠️ Extraction completed with notes in {latency}s.")
                 else:
                     st.error(f"❌ Backend API Error (HTTP {response.status_code}): {response.text}")
                     st.session_state.pop("extraction_response", None)

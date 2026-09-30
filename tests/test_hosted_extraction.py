@@ -1,9 +1,9 @@
-"""Minimal Standalone Test Script for Hosted Qwen2.5-VL Extraction.
+"""Standalone Test Script for Document Extraction with VLM Provider.
 
 Workflow:
 1 Real Local Image
   ↓
-HostedQwenProvider (OpenRouter / OpenAI-compatible API)
+VLM Provider (Local Transformers Qwen2.5-VL or configured endpoint)
   ↓
 Qwen2.5-VL-7B-Instruct
   ↓
@@ -33,7 +33,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from backend.config import get_settings
 from backend.extraction.parser import DynamicJSONParser
 from backend.extraction.prompt import DynamicPromptBuilder
-from backend.extraction.qwen_provider import HostedQwenProvider
+from backend.extraction.qwen_provider import get_vlm_provider
 
 
 def create_realistic_test_invoice_image(output_path: Path) -> Path:
@@ -73,7 +73,7 @@ def create_realistic_test_invoice_image(output_path: Path) -> Path:
     draw.text((740, 265), "$4,500.00", fill=(40, 40, 40))
 
     # Row 2
-    draw.text((55, 305), "Multimodal Vision Inference API Integration", fill=(40, 40, 40))
+    draw.text((55, 305), "Multimodal Vision Inference Integration", fill=(40, 40, 40))
     draw.text((430, 305), "40.0 hrs", fill=(40, 40, 40))
     draw.text((560, 305), "$150.00", fill=(40, 40, 40))
     draw.text((740, 305), "$6,000.00", fill=(40, 40, 40))
@@ -98,7 +98,7 @@ def create_realistic_test_invoice_image(output_path: Path) -> Path:
 
     # Terms & Notes
     draw.text((45, 530), "Payment Terms & Wire Instructions:", fill=(20, 20, 20))
-    draw.text((45, 555), "- Bank Name: Silicon Valley Commercial Bank | Routing: 121000358", fill=(60, 60, 60))
+    draw.text((45, 555), "- Bank Name: Commercial Bank | Routing: 121000358", fill=(60, 60, 60))
     draw.text((45, 580), "- Account Beneficiary: Cognitive Solutions Global Inc. | Ref: INV-2025-9042", fill=(60, 60, 60))
     draw.text((45, 605), "- Late Fee: 1.5% per month applicable after due date (2025-02-15).", fill=(60, 60, 60))
 
@@ -110,16 +110,15 @@ def create_realistic_test_invoice_image(output_path: Path) -> Path:
 
 
 def run_test(image_path: str = None):
-    """Run single document dynamic extraction test against configured Hosted Qwen API."""
+    """Run single document dynamic extraction test."""
     settings = get_settings()
 
     print("=" * 75)
-    print("HOSTED QWEN2.5-VL EXTRACTION TEST")
+    print("QWEN2.5-VL EXTRACTION TEST")
     print("=" * 75)
     print(f"MODEL_BACKEND:       {settings.MODEL_BACKEND}")
-    print(f"QWEN_API_BASE:       {settings.QWEN_API_BASE}")
-    print(f"QWEN_MODEL_NAME:     {settings.QWEN_MODEL_NAME}")
-    print(f"API_KEY_CONFIGURED:  {'Yes (Protected - not displayed)' if settings.QWEN_API_KEY else 'No'}")
+    print(f"QWEN_MODEL_ID:       {settings.QWEN_MODEL_ID}")
+    print(f"DEVICE:              {settings.QWEN_DEVICE}")
     print("-" * 75)
 
     # Select document image
@@ -134,14 +133,13 @@ def run_test(image_path: str = None):
     image = Image.open(target_path)
 
     # Initialize provider & prompt
-    provider = HostedQwenProvider(settings=settings)
+    provider = get_vlm_provider(settings=settings)
     prompt = DynamicPromptBuilder.build_extraction_prompt()
 
-    print("\nExecuting HostedQwenProvider extraction request against API...")
+    print("\nExecuting provider extraction request...")
 
-    http_status = None
     latency = None
-    model_reported = settings.QWEN_MODEL_NAME
+    model_reported = settings.QWEN_MODEL_ID
     raw_output = None
     error_msg = None
     success = False
@@ -154,9 +152,8 @@ def run_test(image_path: str = None):
             system_prompt=DynamicPromptBuilder.SYSTEM_PROMPT,
         )
 
-        http_status = metadata.get("http_status")
         latency = metadata.get("latency_seconds")
-        model_reported = metadata.get("model_used", settings.QWEN_MODEL_NAME)
+        model_reported = metadata.get("model_used", settings.QWEN_MODEL_ID)
 
         parse_success, payload, parse_error = DynamicJSONParser.parse_and_validate(raw_output)
         success = parse_success
@@ -168,14 +165,12 @@ def run_test(image_path: str = None):
     except Exception as exc:
         success = False
         error_msg = str(exc)
-        http_status = getattr(exc, "http_status", None)
         latency = getattr(exc, "latency_seconds", None)
 
     # Report Results
     print("\n" + "=" * 75)
     print("EXTRACTION EXECUTION REPORT")
     print("=" * 75)
-    print(f"HTTP Status:     {http_status if http_status else 'N/A'}")
     print(f"Model:           {model_reported}")
     print(f"Latency:         {f'{latency}s' if latency is not None else 'N/A'}")
     print(f"Success/Failure: {'SUCCESS' if success else 'FAILURE'}")

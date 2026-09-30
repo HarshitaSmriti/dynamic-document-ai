@@ -16,22 +16,25 @@ from backend.schemas.extraction import (
 
 router = APIRouter(tags=["Extraction"])
 settings = get_settings()
-service = DocumentExtractionService()
+service = DocumentExtractionService(settings=settings)
 
 
 @router.api_route("/api/v1/health", methods=["GET", "HEAD"], status_code=status.HTTP_200_OK)
 def api_health_check():
     """Health check endpoint reporting backend service and model status."""
+    provider_status = service.provider.get_status()
+    model_name = (
+        provider_status.get("model_id")
+        or provider_status.get("model_name")
+        or settings.QWEN_MODEL_ID
+    )
     return {
         "status": "healthy",
         "service": settings.APP_NAME,
         "backend": settings.MODEL_BACKEND,
-        "model": settings.QWEN_MODEL_NAME,
-        "provider": {
-            "backend": settings.MODEL_BACKEND,
-            "model_name": settings.QWEN_MODEL_NAME,
-            "status": "online",
-        },
+        "model": model_name,
+        "device": provider_status.get("device", "auto"),
+        "provider": provider_status,
     }
 
 
@@ -55,7 +58,7 @@ async def extract_document(request: ExtractionRequest):
 @router.post("/extract/upload", response_model=ExtractionResponse)
 @router.post("/api/v1/extract/upload", response_model=ExtractionResponse)
 async def extract_document_upload(
-    file: UploadFile = File(..., description="Document file (PDF, PNG, JPG, JPEG)"),
+    file: UploadFile = File(..., description="Document file (PDF, PNG, JPG, JPEG, WEBP)"),
     schema_json: Optional[str] = Form(
         None, description="Optional dynamic extraction schema as JSON string"
     ),
@@ -65,14 +68,14 @@ async def extract_document_upload(
 ):
     """Dynamic document extraction endpoint receiving multipart file upload (single image or multi-page PDF).
     
-    Offloads heavy image processing and VLM network calls to worker threads so the main event loop
-    remains 100% responsive and Render health checks succeed instantly without timing out.
+    Offloads heavy image processing and VLM execution to worker threads so the main event loop
+    remains non-blocking and responsive.
     """
     try:
         content = await file.read()
 
         schema: Optional[ExtractionSchema] = None
-        if schema_json:
+        if schema_json and schema_json.strip():
             schema_dict = json.loads(schema_json)
             schema = ExtractionSchema(**schema_dict)
 

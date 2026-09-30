@@ -1,7 +1,7 @@
 """Universal Schema-Agnostic Dynamic Extraction Prompt Builder.
 
 Instructs Vision-Language Models (e.g. Qwen2.5-VL) to dynamically discover
-and extract structured information from any document type without hardcoded schemas.
+and extract structured information from any document type with zero hallucination.
 """
 
 import json
@@ -10,14 +10,13 @@ from backend.schemas.extraction import DynamicFieldDefinition, ExtractionSchema
 
 
 class DynamicPromptBuilder:
-    """Universal prompt builder for dynamic multimodal document intelligence."""
+    """Universal prompt builder for compact, high-precision document intelligence."""
 
     SYSTEM_PROMPT = (
-        "You are an expert enterprise document intelligence AI system. "
-        "Your task is to analyze document images with extreme visual and textual precision. "
-        "You must discover and extract all visible structured information dynamically. "
-        "Do NOT assume or force any predefined schema or invoice format unless explicitly guided. "
-        "Strictly output a single, complete, valid JSON object enclosed in a ```json codeblock."
+        "You are an expert enterprise document extraction engine. "
+        "Analyze the supplied document image with exact textual and visual fidelity. "
+        "Return ONLY valid JSON. Never hallucinate or invent missing information. "
+        "Do not provide commentary, markdown explanations, or preamble outside the JSON."
     )
 
     @classmethod
@@ -28,40 +27,33 @@ class DynamicPromptBuilder:
         page_num: Optional[int] = None,
         total_pages: Optional[int] = None,
     ) -> str:
-        """Build the dynamic extraction prompt instructing the VLM to discover all fields dynamically."""
-        prompt_parts = []
+        """Build a concise, production-grade extraction prompt."""
+        parts = []
 
-        # Multi-page context header if applicable
         if page_num is not None and total_pages is not None:
-            prompt_parts.append(
-                f"### DOCUMENT ANALYSIS TASK (Page {page_num} of {total_pages})\n"
-                "Carefully inspect everything visible on this page."
-            )
+            parts.append(f"DOCUMENT PAGE {page_num} OF {total_pages}:")
         else:
-            prompt_parts.append(
-                "### DOCUMENT ANALYSIS TASK\n"
-                "Carefully inspect everything visible in the provided document image(s)."
-            )
+            parts.append("DOCUMENT EXTRACTION TASK:")
 
-        prompt_parts.append(
-            "\nYou MUST output a single valid JSON object following this exact outer envelope:\n"
+        parts.append(
+            "Analyze the document image and extract all visible data into this exact JSON structure:\n"
             "```json\n"
             "{\n"
-            '  "document_type": "<auto-detected classification: e.g. receipt, purchase_order, bill_of_lading, contract, form, identity_card, certificate, report, tax_invoice, etc.>",\n'
+            '  "document_type": "<inferred classification: e.g. tax_invoice, purchase_order, receipt, contract, bill_of_lading, id_card, report, form, etc.>",\n'
             '  "document": {\n'
-            '    "<exact_field_name_from_document>": "<extracted_value_or_nested_object>"\n'
+            '    "<field_name>": "<exact_extracted_value_or_null>"\n'
             "  },\n"
             '  "tables": [\n'
             '    {\n'
-            '      "table_name": "<descriptive_table_or_section_name>",\n'
-            '      "headers": ["Column 1", "Column 2"],\n'
-            '      "rows": [["Row1 Col1", "Row1 Col2"]]\n'
+            '      "table_name": "<table_name>",\n'
+            '      "headers": ["Col1", "Col2"],\n'
+            '      "rows": [["Val1", "Val2"]]\n'
             '    }\n'
             "  ],\n"
             '  "lists": [\n'
             '    {\n'
-            '      "list_name": "<descriptive_list_or_clause_name>",\n'
-            '      "items": ["Item 1", "Item 2"]\n'
+            '      "list_name": "<list_name>",\n'
+            '      "items": ["Item1", "Item2"]\n'
             '    }\n'
             "  ],\n"
             '  "warnings": []\n'
@@ -70,37 +62,34 @@ class DynamicPromptBuilder:
         )
 
         if schema and schema.fields:
-            prompt_parts.append(
-                f"\n### TARGET CONTEXT: {schema.schema_name or 'Custom Schema'}"
-            )
+            parts.append(f"\nTARGET SCHEMA CONTEXT ({schema.schema_name or 'Custom Schema'}):")
             if schema.description:
-                prompt_parts.append(f"Context / Instructions: {schema.description}")
-
-            prompt_parts.append("\nExtract the target fields into the `document` object following this template:")
+                parts.append(f"Guidance: {schema.description}")
+            parts.append("Extract target fields into 'document' matching this schema:")
             schema_template = cls._format_fields_template(schema.fields)
-            prompt_parts.append(f"```json\n{schema_template}\n```")
+            parts.append(f"```json\n{schema_template}\n```")
         else:
-            prompt_parts.append(
-                "\n### DYNAMIC DISCOVERY RULES:\n"
-                "1. Document Type: Identify and classify the document accurately based on visual and textual cues.\n"
-                "2. Dynamic Document Fields (`document`): Discover all key-value pairs, identifiers, reference codes, parties/organizations, dates, terms, and summary metrics. Preserve original field labels found in the document.\n"
-                "3. Tabular Data (`tables`): Extract all grids, line items, matrix comparisons, and schedules with exact column headers and row values.\n"
-                "4. Enumerated Items (`lists`): Extract bullet points, numbered requirements, deliverable clauses, and remarks.\n"
-                "5. Data Fidelity: Preserve numbers, codes, and text exactly as written. Do NOT hallucinate, assume, or invent values.\n"
-                "6. Extraction Warnings (`warnings`): If any text is torn, blurred, cropped, handwritten/illegible, or ambiguous, log it in the warnings array."
+            parts.append(
+                "\nEXTRACTION RULES:\n"
+                "1. Extract all visible entities, key-value pairs, identifiers, monetary figures, dates, and parties.\n"
+                "2. Detect all structured tables into 'tables' (headers + rows arrays).\n"
+                "3. Detect enumerated clauses, terms, or bullet points into 'lists'.\n"
+                "4. Preserve exact textual numbers, punctuation, codes, and currencies.\n"
+                "5. Never invent or hallucinate data; use null for unavailable fields.\n"
+                "6. If text is blurry, occluded, or ambiguous, log a note in 'warnings'."
             )
 
-        if custom_instructions:
-            prompt_parts.append(f"\n### SPECIAL USER INSTRUCTIONS:\n{custom_instructions}")
+        if custom_instructions and custom_instructions.strip():
+            parts.append(f"\nUSER EXTRACTION GUIDANCE:\n{custom_instructions.strip()}")
 
-        prompt_parts.append(
-            "\n### STRICT FORMATTING REQUIREMENTS:\n"
-            "- Return ONLY valid JSON inside ```json ... ```.\n"
-            "- Ensure all JSON keys and strings use standard double quotes.\n"
-            "- Separate all key-value pairs and array items with commas."
+        parts.append(
+            "\nOUTPUT FORMAT:\n"
+            "- Output ONLY valid JSON inside ```json ... ```.\n"
+            "- Double quote all keys and string values.\n"
+            "- Do not add explanations or conversational filler."
         )
 
-        return "\n".join(prompt_parts)
+        return "\n".join(parts)
 
     @classmethod
     def _format_fields_template(cls, fields: List[DynamicFieldDefinition], indent: int = 2) -> str:

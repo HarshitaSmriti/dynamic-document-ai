@@ -1,0 +1,29 @@
+Dynamic Enterprise Document AI
+Copyright (c) 2026
+
+This product includes software and models developed by third parties:
+
+1. Qwen2.5-VL (Qwen/Qwen2.5-VL-7B-Instruct)
+   - Developed by the Qwen Team, Alibaba Cloud.
+   - Licensed under the Apache License, Version 2.0.
+   - Reference: https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct
+   - License: http://www.apache.org/licenses/LICENSE-2.0
+
+2. Hugging Face Transformers & Accelerate
+   - Developed by Hugging Face Inc.
+   - Licensed under the Apache License, Version 2.0.
+
+3. PyTorch
+   - Developed by Meta Platforms, Inc. and PyTorch contributors.
+   - Licensed under the BSD 3-Clause License.
+
+4. FastAPI & Pydantic
+   - Developed by Sebastián Ramírez and Samuel Colvin.
+   - Licensed under the MIT License.
+
+5. Streamlit
+   - Developed by Snowflake / Streamlit Inc.
+   - Licensed under the Apache License, Version 2.0.
+
+6. PyMuPDF (fitz)
+   - Developed by Artifex Software, Inc. and PyMuPDF contributors.
