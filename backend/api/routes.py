@@ -19,6 +19,29 @@ settings = get_settings()
 service = DocumentExtractionService(settings=settings)
 
 
+@router.api_route("/", methods=["GET", "HEAD"], status_code=status.HTTP_200_OK)
+def api_root():
+    """Root endpoint welcoming users and providing API navigation."""
+    provider_status = service.provider.get_status()
+    model_name = (
+        provider_status.get("model_id")
+        or provider_status.get("model_name")
+        or settings.QWEN_MODEL_ID
+    )
+    return {
+        "status": "online",
+        "service": settings.APP_NAME,
+        "backend": settings.MODEL_BACKEND,
+        "model": model_name,
+        "docs_url": "/docs",
+        "health_endpoint": "/api/v1/health",
+        "extract_endpoint": "/api/v1/extract/upload",
+    }
+
+
+@router.api_route("/health", methods=["GET", "HEAD"], status_code=status.HTTP_200_OK)
+@router.api_route("/healthz", methods=["GET", "HEAD"], status_code=status.HTTP_200_OK)
+@router.api_route("/api/health", methods=["GET", "HEAD"], status_code=status.HTTP_200_OK)
 @router.api_route("/api/v1/health", methods=["GET", "HEAD"], status_code=status.HTTP_200_OK)
 def api_health_check():
     """Health check endpoint reporting backend service and model status."""
@@ -38,7 +61,21 @@ def api_health_check():
     }
 
 
+@router.get("/extract")
+@router.get("/api/extract")
+@router.get("/api/v1/extract")
+def extract_get_info():
+    """Informational endpoint when extract is called via GET."""
+    return {
+        "message": "Extract endpoint accepts POST requests with JSON payload (document_base64).",
+        "endpoint": "/api/v1/extract",
+        "method": "POST",
+        "docs": "/docs",
+    }
+
+
 @router.post("/extract", response_model=ExtractionResponse)
+@router.post("/api/extract", response_model=ExtractionResponse)
 @router.post("/api/v1/extract", response_model=ExtractionResponse)
 async def extract_document(request: ExtractionRequest):
     """Dynamic document extraction endpoint receiving JSON payload with base64 image or PDF.
@@ -55,7 +92,21 @@ async def extract_document(request: ExtractionRequest):
         )
 
 
+@router.get("/extract/upload")
+@router.get("/api/extract/upload")
+@router.get("/api/v1/extract/upload")
+def extract_upload_get_info():
+    """Informational endpoint when extract/upload is called via GET."""
+    return {
+        "message": "Extract upload endpoint accepts multipart/form-data POST requests with a document file.",
+        "endpoint": "/api/v1/extract/upload",
+        "method": "POST",
+        "docs": "/docs",
+    }
+
+
 @router.post("/extract/upload", response_model=ExtractionResponse)
+@router.post("/api/extract/upload", response_model=ExtractionResponse)
 @router.post("/api/v1/extract/upload", response_model=ExtractionResponse)
 async def extract_document_upload(
     file: UploadFile = File(..., description="Document file (PDF, PNG, JPG, JPEG, WEBP)"),

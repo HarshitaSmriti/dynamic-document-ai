@@ -7,10 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.routes import router as api_router
 from backend.config import get_settings
-from backend.extraction.service import DocumentExtractionService
 
 settings = get_settings()
-service = DocumentExtractionService()
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -19,7 +17,7 @@ app = FastAPI(
     debug=settings.DEBUG,
 )
 
-# Standard Fast, Native Starlette CORS Middleware (No BaseHTTPMiddleware overhead)
+# Standard Fast, Native Starlette CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,20 +28,17 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Include API endpoints (e.g. /extract, /extract/upload)
+# Include API endpoints (e.g. /, /health, /api/v1/health, /extract, /extract/upload)
 app.include_router(api_router)
 
 
-@app.api_route("/", methods=["GET", "HEAD"], status_code=status.HTTP_204_NO_CONTENT)
-@app.api_route("/health", methods=["GET", "HEAD"], status_code=status.HTTP_204_NO_CONTENT)
 @app.api_route("/cron", methods=["GET", "HEAD"], status_code=status.HTTP_204_NO_CONTENT)
 @app.api_route("/ping", methods=["GET", "HEAD"], status_code=status.HTTP_204_NO_CONTENT)
 def cron_health_ping(code: Optional[int] = None):
-    """Ultra-lightweight endpoint for cron-job.org and Render health checks.
+    """Ultra-lightweight endpoint for cron-job.org and monitoring.
 
-    Returns HTTP 204 No Content with Content-Length: 0 and no response body by default.
+    Returns HTTP 204 No Content by default.
     If ?code=200 is passed, returns HTTP 200 OK with minimal plain-text 'OK'.
-    Explicitly ensures zero JSON dumps, HTML pages, model output, or heavy payloads.
     """
     if code == 200:
         return Response(
