@@ -398,16 +398,23 @@ class OpenAICompatibleVLMProvider(BaseVLMProvider):
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": user_content})
 
+        req_max_tokens = min(max_new_tokens or self.settings.QWEN_MAX_NEW_TOKENS or 1024, 1024)
         payload = {
             "model": self.model_name,
             "messages": messages,
-            "max_tokens": max_new_tokens or self.settings.QWEN_MAX_NEW_TOKENS or 1024,
+            "max_tokens": req_max_tokens,
             "temperature": temperature if temperature is not None else (self.settings.QWEN_TEMPERATURE or 0.0),
         }
 
         start_time = time.perf_counter()
         try:
             response = requests.post(endpoint, headers=headers, json=payload, timeout=self.timeout)
+            
+            # If 402 (low credits), retry once with a tighter token window
+            if response.status_code == 402 and req_max_tokens > 512:
+                payload["max_tokens"] = 512
+                response = requests.post(endpoint, headers=headers, json=payload, timeout=self.timeout)
+
             latency = time.perf_counter() - start_time
 
             if response.status_code != 200:
