@@ -86,29 +86,41 @@ class DocumentExtractionService:
         schema: Optional[ExtractionSchema],
         custom_instructions: Optional[str],
     ) -> Tuple[int, bool, Optional[ExtractedDocumentPayload], Optional[str], Optional[str]]:
-        """Worker function to process one page."""
+        """Worker function to process one page with automatic in-flight credit retry."""
         prompt = self.prompt_builder.build_extraction_prompt(
             schema=schema,
             custom_instructions=custom_instructions,
             page_num=page_idx,
             total_pages=total_pages,
         )
-        try:
-            raw_out = self.provider.generate(
-                images=[img],
-                prompt=prompt,
-                system_prompt=self.prompt_builder.SYSTEM_PROMPT,
-                max_new_tokens=self.settings.QWEN_MAX_NEW_TOKENS,
-                temperature=self.settings.QWEN_TEMPERATURE,
-            )
-            success, page_payload, parse_err = self.parser.parse_and_validate(
-                raw_output=raw_out,
-                schema=schema,
-            )
-            return (page_idx, success, page_payload, raw_out, parse_err)
-        except Exception as exc:
-            logger.error(f"Page {page_idx} extraction error: {exc}")
-            return (page_idx, False, None, None, str(exc))
+        last_err = None
+        for attempt in range(3):
+            try:
+                raw_out = self.provider.generate(
+                    images=[img],
+                    prompt=prompt,
+                    system_prompt=self.prompt_builder.SYSTEM_PROMPT,
+                    max_new_tokens=self.settings.QWEN_MAX_NEW_TOKENS,
+                    temperature=self.settings.QWEN_TEMPERATURE,
+                )
+                success, page_payload, parse_err = self.parser.parse_and_validate(
+                    raw_output=raw_out,
+                    schema=schema,
+                )
+                return (page_idx, success, page_payload, raw_out, parse_err)
+            except Exception as exc:
+                last_err = str(exc)
+                if "in_flight_budget" in last_err or "402" in last_err or "429" in last_err:
+                    logger.warning(
+                        f"Page {page_idx} in-flight rate/credit limit encountered (attempt {attempt+1}/3). "
+                        f"Pacing request and retrying in {attempt + 1}s..."
+                    )
+                    time.sleep(attempt + 1)
+                    continue
+                logger.error(f"Page {page_idx} extraction error: {exc}")
+                return (page_idx, False, None, None, str(exc))
+
+        return (page_idx, False, None, None, last_err or "Extraction retry limit exceeded.")
 
     def extract_from_images(
         self,
@@ -167,12 +179,12 @@ class DocumentExtractionService:
                     error_message=str(exc),
                 )
 
-        # Multi-page extraction
-        # Note: Local GPU/CPU models are best processed sequentially to avoid VRAM contention
-        is_local_model = isinstance(self.provider, LocalQwenVLProvider)
+        # Multi-page extraction: Paced execution to ensure in-flight API budgets are never exhausted
         page_results: List[Tuple[int, bool, Optional[ExtractedDocumentPayload], Optional[str], Optional[str]]] = []
+        is_local_model = isinstance(self.provider, LocalQwenVLProvider)
 
-        if is_local_model:
+        if is_local_model or total_pages > 2:
+            # Sequential extraction for low-credit budgets and local memory safety
             for idx, img in enumerate(images, 1):
                 res = self._extract_single_page(
                     img=img,
@@ -183,9 +195,8 @@ class DocumentExtractionService:
                 )
                 page_results.append(res)
         else:
-            # Thread pool for remote/endpoint providers
-            max_workers = min(4, total_pages)
-            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Dual-worker execution for small 2-page documents
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
                 futures = [
                     executor.submit(
                         self._extract_single_page,
