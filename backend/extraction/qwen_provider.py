@@ -368,7 +368,7 @@ class OpenAICompatibleVLMProvider(BaseVLMProvider):
         self.timeout = self.settings.REQUEST_TIMEOUT
 
     def _image_to_data_uri(self, image: Union[Image.Image, str]) -> str:
-        """Convert a PIL Image or base64 string to a data URI."""
+        """Convert a PIL Image or base64 string to a compact data URI."""
         if isinstance(image, str):
             if image.startswith("data:image"):
                 return image
@@ -376,7 +376,13 @@ class OpenAICompatibleVLMProvider(BaseVLMProvider):
 
         buffered = io.BytesIO()
         rgb_img = image.convert("RGB") if image.mode != "RGB" else image
-        rgb_img.save(buffered, format="JPEG", quality=85, optimize=True)
+        if max(rgb_img.size) > 512:
+            scale = 512 / float(max(rgb_img.size))
+            rgb_img = rgb_img.resize(
+                (int(rgb_img.width * scale), int(rgb_img.height * scale)),
+                Image.Resampling.BILINEAR,
+            )
+        rgb_img.save(buffered, format="JPEG", quality=75, optimize=True)
         b64_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
         return f"data:image/jpeg;base64,{b64_str}"
 
@@ -404,7 +410,7 @@ class OpenAICompatibleVLMProvider(BaseVLMProvider):
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": user_content})
 
-        req_max_tokens = min(max_new_tokens or self.settings.QWEN_MAX_NEW_TOKENS or 1024, 1024)
+        req_max_tokens = min(max_new_tokens or self.settings.QWEN_MAX_NEW_TOKENS or 512, 512)
         payload = {
             "model": self.model_name,
             "messages": messages,
