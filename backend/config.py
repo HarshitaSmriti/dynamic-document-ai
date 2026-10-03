@@ -38,9 +38,9 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("CORS_ORIGINS", "ALLOWED_ORIGINS"),
     )
 
-    # Model Backend Selector: 'local' (Hugging Face Transformers) | 'hosted_api' (Self-hosted OpenAI/vLLM endpoint)
+    # Model Backend Selector: 'hosted_api' (OpenRouter / vLLM / OpenAI API) | 'local' (Hugging Face Transformers)
     MODEL_BACKEND: str = Field(
-        default="local",
+        default="hosted_api",
         validation_alias=AliasChoices("MODEL_BACKEND", "BACKEND_TYPE"),
     )
 

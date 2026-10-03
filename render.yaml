@@ -8,11 +8,13 @@ services:
     autoDeploy: true
     envVars:
       - key: MODEL_BACKEND
-        value: local
-      - key: QWEN_MODEL_ID
-        value: Qwen/Qwen2.5-VL-7B-Instruct
-      - key: QWEN_DEVICE
-        value: auto
+        value: hosted_api
+      - key: QWEN_API_BASE
+        value: https://openrouter.ai/api/v1
+      - key: QWEN_MODEL_NAME
+        value: qwen/qwen2.5-vl-72b-instruct
+      - key: QWEN_API_KEY
+        sync: false
       - key: QWEN_MAX_NEW_TOKENS
         value: "1024"
       - key: QWEN_TEMPERATURE
