@@ -106,7 +106,29 @@ with st.sidebar:
         help="URL of the backend API (e.g. http://localhost:8000 or self-hosted GPU endpoint)",
     )
 
-    backend_endpoint = raw_backend.strip().rstrip("/")
+    raw_url = raw_backend.strip().rstrip("/")
+    if raw_url.endswith(".onrende"):
+        backend_endpoint = raw_url + "r.com"
+    elif raw_url.endswith(".onrend"):
+        backend_endpoint = raw_url + "er.com"
+    elif raw_url.endswith(".onren"):
+        backend_endpoint = raw_url + "der.com"
+    elif raw_url.endswith(".onre"):
+        backend_endpoint = raw_url + "nder.com"
+    elif raw_url.endswith(".onr"):
+        backend_endpoint = raw_url + "ender.com"
+    elif raw_url.endswith(".on"):
+        backend_endpoint = raw_url + "render.com"
+    elif raw_url.endswith(".o"):
+        backend_endpoint = raw_url + "nrender.com"
+    elif raw_url.endswith(".onrender"):
+        backend_endpoint = raw_url + ".com"
+    elif raw_url.endswith(".onrender.c") or raw_url.endswith(".c"):
+        backend_endpoint = raw_url.rstrip(".c") + ".com"
+    elif raw_url.endswith(".co"):
+        backend_endpoint = raw_url + "m"
+    else:
+        backend_endpoint = raw_url
 
     # Health Check Probe
     if st.button("🔄 Check Backend Health", use_container_width=True):
