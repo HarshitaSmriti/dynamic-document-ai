@@ -357,8 +357,13 @@ class OpenAICompatibleVLMProvider(BaseVLMProvider):
     def __init__(self, settings: Optional[Settings] = None):
         self.settings = settings or get_settings()
         self.api_base = (self.settings.QWEN_API_BASE or "http://localhost:8000/v1").rstrip("/")
-        self.api_key = self.settings.QWEN_API_KEY
-        self.model_name = self.settings.QWEN_MODEL_ID or "Qwen/Qwen2.5-VL-7B-Instruct"
+        raw_model = self.settings.QWEN_MODEL_ID or "qwen/qwen2.5-vl-72b-instruct"
+        if "openrouter.ai" in self.api_base.lower():
+            if "qwen-2.5-vl" in raw_model.lower():
+                raw_model = raw_model.replace("qwen-2.5-vl", "qwen2.5-vl")
+            if raw_model.endswith(":free"):
+                raw_model = raw_model.replace(":free", "")
+        self.model_name = raw_model
         self.timeout = self.settings.REQUEST_TIMEOUT
 
     def _image_to_data_uri(self, image: Union[Image.Image, str]) -> str:
