@@ -356,7 +356,8 @@ class OpenAICompatibleVLMProvider(BaseVLMProvider):
 
     def __init__(self, settings: Optional[Settings] = None):
         self.settings = settings or get_settings()
-        self.api_base = (self.settings.QWEN_API_BASE or "http://localhost:8000/v1").rstrip("/")
+        self.api_base = (self.settings.QWEN_API_BASE or "https://openrouter.ai/api/v1").rstrip("/")
+        self.api_key = self.settings.QWEN_API_KEY
         raw_model = self.settings.QWEN_MODEL_ID or "qwen/qwen2.5-vl-72b-instruct"
         if "openrouter.ai" in self.api_base.lower():
             if "qwen-2.5-vl" in raw_model.lower():
