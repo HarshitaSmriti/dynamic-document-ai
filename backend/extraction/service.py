@@ -52,8 +52,8 @@ class DocumentExtractionService:
         except Exception as exc:
             raise ValueError(f"IMAGE_PROCESSING_ERROR: Failed to decode base64 image data: {str(exc)}") from exc
 
-    def _optimize_image(self, img: Image.Image, max_dim: int = 1280) -> Image.Image:
-        """Resize image if dimensions exceed max_dim to ensure fast tokenization and low memory."""
+    def _optimize_image(self, img: Image.Image, max_dim: int = 800) -> Image.Image:
+        """Resize image if dimensions exceed max_dim to drastically reduce vision token count."""
         w, h = img.size
         if max(w, h) > max_dim:
             scale = max_dim / float(max(w, h))
@@ -61,8 +61,8 @@ class DocumentExtractionService:
             img = img.resize(new_size, Image.Resampling.BILINEAR)
         return img
 
-    def render_pdf_bytes_to_images(self, pdf_bytes: bytes, dpi: int = 96) -> List[Image.Image]:
-        """Convert PDF byte stream into optimized PIL Images for inference."""
+    def render_pdf_bytes_to_images(self, pdf_bytes: bytes, dpi: int = 72) -> List[Image.Image]:
+        """Convert PDF byte stream into compact PIL Images for lightweight token inference."""
         try:
             doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
             images = []
@@ -70,7 +70,7 @@ class DocumentExtractionService:
                 page = doc.load_page(page_num)
                 pix = page.get_pixmap(dpi=dpi)
                 img = Image.open(io.BytesIO(pix.tobytes("jpeg"))).convert("RGB")
-                img = self._optimize_image(img)
+                img = self._optimize_image(img, max_dim=800)
                 images.append(img)
             doc.close()
             gc.collect()
